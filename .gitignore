@@ -1,0 +1,129 @@
+# -------------------------
+# 🧠 PYTHON / FASTAPI BASICS
+# -------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*$py.class
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.ENV/
+
+# Byte-compiled / optimized files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Logs and cache
+*.log
+*.pot
+*.pyc
+*.pyo
+*.pyd
+*.pid
+*.gz
+*.out
+*.db
+*.sqlite3
+*.sqlite
+*.swp
+
+# -------------------------
+# ⚙️ FASTAPI / UVICORN / DEPLOYMENT
+# -------------------------
+# Uvicorn / Gunicorn logs
+*.pid
+*.log
+
+# Local config and secrets
+.env
+.env.*
+!.env.example  # allow sample env file for others
+
+# -------------------------
+# 🧰 DEVELOPMENT TOOLS
+# -------------------------
+.idea/
+.vscode/
+*.code-workspace
+
+# pytest cache and coverage
+.coverage
+htmlcov/
+.tox/
+.pytest_cache/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+# mypy / type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# -------------------------
+# 📦 BUILD / DIST / PACKAGE
+# -------------------------
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# -------------------------
+# 🐳 DOCKER / DEPLOYMENT
+# -------------------------
+Dockerfile~
+docker-compose.override.yml
+docker-compose.local.yml
+.docker/
+*.tar
+
+# -------------------------
+# 🧾 MISC
+# -------------------------
+*.bak
+*.tmp
+*.swp
+*.swo
+*.orig
+*.rej
+
+# Mac / OS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# -------------------------
+# 🧩 FRONTEND (if exists)
+# -------------------------
+frontend/node_modules/
+frontend/dist/
+frontend/build/
