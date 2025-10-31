@@ -17,76 +17,97 @@ client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 def analyze_pain_points_with_groq(comments):
     """
     Send Reddit comments to Groq AI and extract user pain points.
-    Returns proper Python dictionary instead of JSON string.
+    Returns formatted markdown text with summary at the top.
     """
     if not comments:
-        return {"themes": [], "summary": "No comments available for analysis."}
-    
+        return "## Pain Points Analysis\n\nNo comments available for analysis."
 
-        # ✅ Combine all comment bodies into one text blob
-    combined_text = "\n\n".join(
-        [f"- {c['body']}" for c in comments if c.get("body")]
-    )
+    # ✅ Combine all comment bodies into one text blob
+    combined_text = "\n\n".join([f"- {c['body']}" for c in comments if c.get("body")])
 
     prompt = f"""
-You are a market research AI. The following are Reddit user comments discussing their problems, frustrations, or experiences.
+You are a market research AI analyzing Reddit comments to identify user pain points, frustrations, and unmet needs.
 
-Analyze these comments and identify the main PAIN POINTS users are expressing. 
-Group similar complaints or frustrations together under a theme.
+**TASK:**
+Analyze these comments and extract the main PAIN POINTS users are expressing. 
+Group similar complaints or frustrations together under thematic categories.
 
-Return your answer in a structured JSON format:
-{{
-    "themes": [
-        {{
-            "topic": "<short descriptive label>",
-            "pain_points": ["...", "..."]
-        }}
-    ],
-    "summary": "<short overall insight>"
-}}
+**RESPONSE FORMAT:**
+Return your analysis in clear, well-structured markdown text with the following sections:
 
-IMPORTANT: Return ONLY valid JSON, no additional text, no markdown code blocks, no explanations.
+# User Pain Points Analysis
 
-Here are the user comments:
+## 📊 Executive Summary
+[Start with a concise 2-3 paragraph summary that gives an immediate overview of the main findings. Include:
+- Overall sentiment and key frustrations
+- Most common pain points
+- Potential business opportunities
+- Severity of issues mentioned]
+
+## 🎯 Detailed Analysis
+
+### Theme 1: [Theme Name]
+- **Main Issues**: [Brief description]
+- **User Quotes**: 
+  - "[Direct quote illustrating pain point]"
+  - "[Another relevant quote]"
+- **Impact**: How this affects users
+- **Frequency**: How commonly this issue appears
+
+### Theme 2: [Theme Name]
+- **Main Issues**: [Brief description]
+- **User Quotes**: 
+  - "[Direct quote illustrating pain point]"
+  - "[Another relevant quote]"
+- **Impact**: How this affects users
+- **Frequency**: How commonly this issue appears
+
+[Continue with additional themes as needed]
+
+## 💡 Opportunity Insights
+- Potential solutions or improvements suggested by users
+- Unmet needs that could be addressed
+- Common workarounds users are currently employing
+
+## 🚨 Priority Recommendations
+- Most urgent issues to address
+- Quick wins that could improve user satisfaction
+- Strategic opportunities for product development
+
+**IMPORTANT:**
+- Start with the Executive Summary at the very top after the main title
+- Use proper markdown formatting with headers, bullet points, and emphasis
+- Include direct user quotes to support your analysis
+- Focus on specific, actionable pain points
+- Keep the language clear and business-focused
+- Do not use JSON format - return only markdown text
+
+Here are the user comments to analyze:
 {combined_text}
 """
 
     try:
         # ✅ Send to Groq model
         response = client.chat.completions.create(
-            model="openai/gpt-oss-20b",  # You can also use "llama3-8b-8192" or "gemma-7b-it"
+            model="openai/gpt-oss-20b",
             messages=[
-                {"role": "system", "content": "You are an expert in startup idea validation and user pain point extraction. Always return valid JSON only."},
+                {
+                    "role": "system",
+                    "content": "You are an expert market researcher specializing in extracting user pain points and frustrations from online discussions. You return well-formatted markdown analysis starting with a comprehensive executive summary, followed by detailed analysis with direct user quotes and actionable insights.",
+                },
                 {"role": "user", "content": prompt},
             ],
             temperature=0.4,
-            response_format={"type": "json_object"}  # Force JSON response
+            max_tokens=2000,
         )
 
-        # ✅ Extract the JSON from response
-        response_text = response.choices[0].message.content
-        
-        # ✅ Clean the response - remove markdown code blocks if present
-        cleaned_response = response_text.strip()
-        if cleaned_response.startswith('```json'):
-            cleaned_response = cleaned_response[7:]  # Remove ```json
-        if cleaned_response.startswith('```'):
-            cleaned_response = cleaned_response[3:]  # Remove ```
-        if cleaned_response.endswith('```'):
-            cleaned_response = cleaned_response[:-3]  # Remove ```
-        
-        # ✅ Parse JSON to Python dictionary
-        pain_points_data = json.loads(cleaned_response)
-        return pain_points_data
+        # ✅ Extract and return the markdown text directly
+        analysis_text = response.choices[0].message.content.strip()
+        return analysis_text
 
-    except json.JSONDecodeError as e:
-        print(f"JSON parsing error: {e}")
-        print(f"Raw response: {response_text}")
-        return {"error": "Failed to parse AI response", "raw_response": response_text}
-    
     except Exception as e:
         print(f"Error in AI analysis: {e}")
-        return {"error": f"AI analysis failed: {str(e)}"}
+        return f"# User Pain Points Analysis\n\n## 📊 Executive Summary\n\nAnalysis could not be completed due to an error: {str(e)}\n\nPlease try again with different comments."
 
 
 # ------------------------ REDDIT SCRAPER ------------------------
@@ -105,7 +126,9 @@ async def fetch_reddit_comments(url: str, limit: int = 30, sort_by: str = "score
                 response.raise_for_status()
                 data = await response.json()
 
-        post_title = data[0]["data"]["children"][0]["data"].get("title", "Untitled Post")
+        post_title = data[0]["data"]["children"][0]["data"].get(
+            "title", "Untitled Post"
+        )
         comments_data = data[1]["data"]["children"]
 
         def extract_comments(comments):
@@ -117,7 +140,7 @@ async def fetch_reddit_comments(url: str, limit: int = 30, sort_by: str = "score
                 body = d.get("body")
                 author = d.get("author")
                 score = d.get("score", 0)
-                if body and body not in ['[deleted]', '[removed]']:
+                if body and body not in ["[deleted]", "[removed]"]:
                     result.append({"author": author, "body": body, "score": score})
             return result
 
@@ -126,20 +149,19 @@ async def fetch_reddit_comments(url: str, limit: int = 30, sort_by: str = "score
         # ✅ Sort first
         if sort_by == "score":
             all_comments.sort(key=lambda x: x["score"], reverse=True)
-        # elif sort_by == "new":
-        #     all_comments.sort(key=lambda x: x.get("created_utc", 0), reverse=True)
 
         # ✅ Limit results
         limited_comments = all_comments[:limit]
 
-        # ✅ Analyze pain points using Groq AI
-        pain_points = analyze_pain_points_with_groq(limited_comments)
-        print("details sent")
+        # ✅ Analyze pain points using Groq AI (now returns markdown text)
+        pain_points_analysis = analyze_pain_points_with_groq(limited_comments)
+        print("Analysis completed with summary at the top")
 
         return {
             "title": post_title,
             "comments": limited_comments,
-            "pain_points": pain_points,  # Now this is a proper dict, not string
+            "pain_points_analysis": pain_points_analysis,  # Markdown text with summary first
+            "comments_count": len(limited_comments),
         }
 
     except Exception as e:
@@ -147,5 +169,6 @@ async def fetch_reddit_comments(url: str, limit: int = 30, sort_by: str = "score
             "error": f"Failed to fetch or process Reddit data: {str(e)}",
             "title": "Error",
             "comments": [],
-            "pain_points": {"themes": [], "summary": "Analysis failed due to scraping error"}
+            "pain_points_analysis": "# User Pain Points Analysis\n\n## 📊 Executive Summary\n\nUnable to fetch Reddit comments for analysis. Please check the URL and try again.",
+            "comments_count": 0,
         }

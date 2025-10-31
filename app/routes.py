@@ -23,7 +23,9 @@ def allow_request():
 @router.post("/fetch_data")
 async def fetch_data(request: Request):
     if not allow_request():
-        raise HTTPException(status_code=429, detail="Rate limit exceeded. Try again after 1 minute.")
+        raise HTTPException(
+            status_code=429, detail="Rate limit exceeded. Try again after 1 minute."
+        )
 
     data = await request.json()
     url = data.get("url")
@@ -39,26 +41,20 @@ async def fetch_data(request: Request):
     # Fetch Reddit data + AI analysis
     result = await fetch_reddit_comments(url)
 
-    # Extract title + pain points
+    # Check for errors from scraper
+    if "error" in result:
+        raise HTTPException(status_code=500, detail=result["error"])
+
+    # Extract data from new scraper format
     title = result.get("title", "Untitled Post")
-    pain_points = result.get("pain_points", {})
-    themes = pain_points.get("themes", [])
-    summary = pain_points.get("summary", "No summary found.")
+    pain_points_analysis = result.get("pain_points_analysis", "No analysis available.")
+    comments_count = result.get("comments_count", 0)
 
-    # 🧱 Build readable plain text
-    text_output = f"📰 Post Title:\n{title}\n\n"
 
-    for theme in themes:
-        topic = theme.get("topic", "Untitled Theme")
-        points = theme.get("pain_points", [])
-        text_output += f"🔹 {topic}:\n"
-        for p in points:
-            text_output += f"   • {p}\n"
-        text_output += "\n"
-
-    text_output += f"🧠 Summary:\n{summary}\n"
-
-    return Response(content=text_output, media_type="text/plain")
+    return Response(
+        content=pain_points_analysis,
+        media_type="text/markdown",  # Changed to markdown type
+    )
 
 
 @router.get("/test")
